@@ -59,7 +59,7 @@ class LotteImallTestOperator(Verifying):
 
             for product in product_list:
                 product.click()
-                self.select_product_options()
+                self.selectProductOption()
                 self.page.locator("#immOrder-btn").click()
 
                 with self.timeChecker() as tC:
@@ -101,7 +101,7 @@ class LotteImallTestOperator(Verifying):
     #                     reset_option.locator("div.wrap_scroll_option").locator("ul").locator("li").first.click()
     
 
-    def select_product_options(self):
+    def selectProductOption(self):
         try:
             selectOptionCategory = self.page.locator("div.inp_option.inpOptList")
             logging.info(f"Found {selectOptionCategory.count()} option categories")
