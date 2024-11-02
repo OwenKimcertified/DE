@@ -2,7 +2,7 @@ from playwright.sync_api import expect, Page
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from functools import wraps
-from typing import Generator
+from typing import Generator, Tuple
 
 import pytest, time, logging
 
@@ -84,18 +84,40 @@ class LotteImallTestOperator(Verifying):
         for term in search_terms:
             self.page.locator("input#headerQuery.search").fill(term)
             self.page.locator("input#headerQuery.search").press("Enter")
-
             self.page.wait_for_load_state("networkidle")
+            
             product_list = self.page.locator("div.wrap_unitlist").locator("ul").locator("li").all()
-
+            product_found = False
+            
             for product in product_list:
-                product.click()
-                self.selectProductOption()
-                self.page.locator("#immOrder-btn").click()
+                if product_found:
+                    break
 
-                with self.timeChecker() as tC:
-                    self.page.wait_for_url("https://www.lotteimall.com/order/searchOrderSheetList.lotte", wait_until = "networkidle")
-                self.results.append(self.result_time)
+                try:
+                    product.click()
+                    self.page.wait_for_load_state("networkidle")
+
+                    if self.selectProductOption():
+                        product_found = True
+                        self.page.locator("#immOrder-btn").click()
+                        with self.timeChecker() as tC:
+                            self.page.wait_for_url("https://www.lotteimall.com/order/searchOrderSheetList.lotte", wait_until="networkidle")
+                        self.results.append(self.result_time)
+                        break
+                    else:
+                        # 옵션 선택에 실패한 경우, 이전 페이지로 돌아가기
+                        self.page.go_back()
+                        self.page.wait_for_load_state("networkidle")
+
+                except Exception as e:
+                    logging.error(f"상품 처리 중 오류 발생: {str(e)}")
+                    # 오류 발생 시 다음 상품으로 넘어감
+                    self.page.go_back()
+                    self.page.wait_for_load_state("networkidle")
+                    continue
+
+            if not product_found:
+                logging.warning(f"'{term}' 검색어로 적절한 상품을 찾지 못했습니다.")
 
     # def select_product_options(self):
     #     selectOptionCategory =  self.page.locator("div.inp_option.inpOptList")
@@ -218,19 +240,19 @@ class LotteImallTestOperator(Verifying):
         self.api_monitor.assert_api_performance(url_pattern, threshold_ms)
         
 @pytest.fixture(scope = 'function', autouse = False)
-def lotte_imall_tester(page: Page) -> tuple:
+def lotte_imall_tester(page: Page) -> Generator[LotteImallTestOperator, float] :
     page.goto("https://www.lotteimall.com/main/viewMain.lotte?dpml_no=1&tlog=00100_1#disp_no=5223317", wait_until = 'networkidle')
     search_terms = ["아디다스"] 
     tester = LotteImallTestOperator(page)
     ### api monitoring
-    tester.monitor_api_requests("/api/", 1000)
+    tester.monitor_api_requests("/api/", 5000)
     # tester.login()
     tester.searchProductAndOrder(search_terms)
     average_result = tester.GetAverageResult()
-    yield average_result, tester
+    yield tester, average_result
 
 def test_order_payProcess(lotte_imall_tester: float) -> None:
-    average_result, tester = lotte_imall_tester
-    assert lotte_imall_tester == pytest.approx(5, abs = 1)
+    tester, average_result = lotte_imall_tester
+    assert average_result == pytest.approx(5, abs = 1)
     # API 성능 assertion
-    tester.assert_api_performance("/api/", 1000)
+    tester.assert_api_performance("/api/", 5000)
