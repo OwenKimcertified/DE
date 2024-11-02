@@ -24,7 +24,7 @@ class APIMonitor:
         def handle_response(response):
             if response.request.url in self.api_timings:
                 end_time = time.time()
-                duration = (end_time - self.api_timings[response.request.url]['start']) * 1000  # Convert to ms
+                duration = (end_time - self.api_timings[response.request.url]['start']) * 1000  
                 self.api_timings[response.request.url]['duration'] = duration
                 if duration > threshold_ms:
                     print(f"API call to {response.request.url} took {duration:.2f}ms, exceeding the {threshold_ms}ms threshold")
@@ -152,6 +152,14 @@ class LotteImallTestOperator(Verifying):
     #                     selectOptionCategory.nth(reset_seq).click()
     #                     reset_option = selectOptionCategory.nth(reset_seq).locator(f"div#optLaySel_{reset_seq}")
     #                     reset_option.locator("div.wrap_scroll_option").locator("ul").locator("li").first.click()
+
+    def reset_options(self, seq):
+        selectOptionCategory = self.page.locator("div.inp_option.inpOptList")
+        for reset_seq in range(seq):
+            selectOptionCategory.nth(reset_seq).click()
+            reset_option = selectOptionCategory.nth(reset_seq).locator(f"div#optLaySel_{reset_seq}")
+            reset_option.locator("div.wrap_scroll_option").locator("ul").locator("li").first.click()
+            self.page.wait_for_timeout(1000) 
     
 
     def selectProductOption(self):
@@ -199,30 +207,30 @@ class LotteImallTestOperator(Verifying):
 
                 if not all_options_selected:
                     logging.error("Failed to select all options after maximum attempts")
+                    return False
+
+                # 모든 옵션 선택 후 수량 입력 필드 확인 및 증가
+                quantity_check = self.page.locator("div.selected_option").all()
+                for qc in quantity_check:
+                    if qc.is_visible() and qc.get_attribute("class").startswith("opt"):
+                        break
+                    else:
+                        pass
+
+                # "장바구니 담기" 버튼 클릭 (주석 처리된 부분 유지)
+                # cart_button = self.page.locator("a#immCart-btn")
+                # if cart_button.is_visible():
+                #     cart_button.click()
+                #     self.page.wait_for_load_state("networkidle")
+
+                return True
             else:
                 logging.info("No options to select for this product")
+                return True
 
         except Exception as e:
             logging.error(f"An error occurred while selecting options: {str(e)}")
-
-            # 모든 옵션 선택 후 수량 입력 필드 확인 및 증가
-            quantity_check = self.page.locator("div.selected_option").all()
-            for qc in quantity_check:
-                if qc.is_visible() and qc.get_attribute("class").startswith("opt"):
-                    break
-                else:
-                    pass
-            
-            # # "장바구니 담기" 버튼 클릭
-            # cart_button = self.page.locator("a#immCart-btn")
-            # if cart_button.is_visible():
-            #     cart_button.click()
-            #     self.page.wait_for_load_state("networkidle")
-            return True
-        
-        else:
-            print("No options found for this product")
-            return False        
+            return False
         
     def GetAverageResult(self) -> float:
         if not self.results:
@@ -238,21 +246,23 @@ class LotteImallTestOperator(Verifying):
 
     def assert_api_performance(self, url_pattern: str, threshold_ms: int):
         self.api_monitor.assert_api_performance(url_pattern, threshold_ms)
+
+    def monitoring(self):
+        # Implement the abstract method from Verifying
+        pass
         
-@pytest.fixture(scope = 'function', autouse = False)
-def lotte_imall_tester(page: Page) -> Generator[LotteImallTestOperator, float] :
+@pytest.fixture(scope='function', autouse=False)
+def lotte_imall_tester(page: Page) -> Generator[Tuple[LotteImallTestOperator, float], None, None]:
     page.goto("https://www.lotteimall.com/main/viewMain.lotte?dpml_no=1&tlog=00100_1#disp_no=5223317", wait_until = 'networkidle')
-    search_terms = ["아디다스"] 
+    search_terms = ["아디다스"]
     tester = LotteImallTestOperator(page)
-    ### api monitoring
-    tester.monitor_api_requests("/api/", 5000)
     # tester.login()
     tester.searchProductAndOrder(search_terms)
     average_result = tester.GetAverageResult()
     yield tester, average_result
 
-def test_order_payProcess(lotte_imall_tester: float) -> None:
+def test_order_payProcess(lotte_imall_tester: Tuple[LotteImallTestOperator, float]) -> None:
     tester, average_result = lotte_imall_tester
-    assert average_result == pytest.approx(5, abs = 1)
+    assert average_result == pytest.approx(5, abs=1)
     # API 성능 assertion
     tester.assert_api_performance("/api/", 5000)
