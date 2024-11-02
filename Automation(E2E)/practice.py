@@ -153,11 +153,13 @@ class LotteImallTestOperator(Verifying):
             logging.error(f"An error occurred while selecting options: {str(e)}")
 
             # 모든 옵션 선택 후 수량 입력 필드 확인 및 증가
-            quantity_input = self.page.locator("input#ordQty")
-            if quantity_input.is_visible():
-                quantity_input.fill("1")
-                self.page.wait_for_load_state("networkidle")
-
+            quantity_check = self.page.locator("div.selected_option").all()
+            for qc in quantity_check:
+                if qc.is_visible() and qc.get_attribute("class").startswith("opt"):
+                    break
+                else:
+                    pass
+                
             # # "장바구니 담기" 버튼 클릭
             # cart_button = self.page.locator("a#immCart-btn")
             # if cart_button.is_visible():
