@@ -1,12 +1,42 @@
-from playwright.sync_api import sync_playwright, expect, Page
+from playwright.sync_api import expect, Page
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from functools import wraps
+from typing import Generator
+
 import pytest, time, logging
 
 USERID = "blank"
 USERPASSWORD = "blank"
 logging.basicConfig(level = logging.INFO)
+
+class APIMonitor:
+    def __init__(self, page: Page):
+        self.page = page
+        self.api_timings = {}
+
+    def monitor_api_requests(self, url_pattern: str, threshold_ms: int):
+        def handle_request(request):
+            if url_pattern in request.url:
+                start_time = time.time()
+                self.api_timings[request.url] = {'start': start_time}
+
+        def handle_response(response):
+            if response.request.url in self.api_timings:
+                end_time = time.time()
+                duration = (end_time - self.api_timings[response.request.url]['start']) * 1000  # Convert to ms
+                self.api_timings[response.request.url]['duration'] = duration
+                if duration > threshold_ms:
+                    print(f"API call to {response.request.url} took {duration:.2f}ms, exceeding the {threshold_ms}ms threshold")
+
+        self.page.on('request', handle_request)
+        self.page.on('response', handle_response)
+
+    def assert_api_performance(self, url_pattern: str, threshold_ms: int):
+        slow_apis = [url for url, timing in self.api_timings.items() 
+                     if url_pattern in url and timing.get('duration', 0) > threshold_ms]
+        
+        assert len(slow_apis) == 0, f"The following APIs exceeded the {threshold_ms}ms threshold: {slow_apis}"
 
 class Verifying(ABC):
     def __init__(self):
@@ -30,7 +60,8 @@ class LotteImallTestOperator(Verifying):
         super().__init__()
         self.page = page
         self.results = []
-
+        self.api_monitor = APIMonitor(page)
+        
     def login(self):
         login_status = True
         self.page.goto("https://www.lotteimall.com/main/viewMain.lotte?dpml_no=1#disp_no=5223317")
@@ -159,7 +190,7 @@ class LotteImallTestOperator(Verifying):
                     break
                 else:
                     pass
-                
+            
             # # "장바구니 담기" 버튼 클릭
             # cart_button = self.page.locator("a#immCart-btn")
             # if cart_button.is_visible():
@@ -180,18 +211,26 @@ class LotteImallTestOperator(Verifying):
         print(f"Average time: {average:.2f} seconds")
         return average
 
-    def monitoring(self):
-        print("Monitoring LotteImall operations")
+    def monitor_api_requests(self, url_pattern: str, threshold_ms: int):
+        self.api_monitor.monitor_api_requests(url_pattern, threshold_ms)
+
+    def assert_api_performance(self, url_pattern: str, threshold_ms: int):
+        self.api_monitor.assert_api_performance(url_pattern, threshold_ms)
         
 @pytest.fixture(scope = 'function', autouse = False)
-def lotte_imall_tester(page: Page) -> int:
+def lotte_imall_tester(page: Page) -> tuple:
     page.goto("https://www.lotteimall.com/main/viewMain.lotte?dpml_no=1&tlog=00100_1#disp_no=5223317", wait_until = 'networkidle')
     search_terms = ["아디다스"] 
     tester = LotteImallTestOperator(page)
+    ### api monitoring
+    tester.monitor_api_requests("/api/", 1000)
     # tester.login()
     tester.searchProductAndOrder(search_terms)
     average_result = tester.GetAverageResult()
-    yield average_result
+    yield average_result, tester
 
 def test_order_payProcess(lotte_imall_tester: float) -> None:
-    assert test_order_payProcess == pytest.approx(5, abs = 1)
+    average_result, tester = lotte_imall_tester
+    assert lotte_imall_tester == pytest.approx(5, abs = 1)
+    # API 성능 assertion
+    tester.assert_api_performance("/api/", 1000)
