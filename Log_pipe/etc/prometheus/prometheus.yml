@@ -1,0 +1,8 @@
+global:
+  scrape_interval:     15s 
+  evaluation_interval: 15s 
+
+scrape_configs:
+  - job_name: 'jmx-kafka-exporter'
+    static_configs:
+      - targets: ['jmx-exporter1:5556','jmx-exporter2:5556', 'jmx-exporter3:5556']

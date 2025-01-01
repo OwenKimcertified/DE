@@ -1,0 +1,3 @@
+docker exec -it ~
+
+grafana-cli admin reset-admin-password <new password>
