@@ -10,8 +10,6 @@ def notify_applications(message: str):
 
 class CircuitBreaker:
     """
-    간단한 서킷브레이커 클래스 예시
-
     Attributes:
         failure_threshold (int): 연속 실패 허용 횟수
         recovery_timeout (int): OPEN 상태에서 HALF_OPEN으로 전환하기 위한 최소 시간(초)
