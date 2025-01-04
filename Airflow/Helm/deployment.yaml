@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: airflow-webserver
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.web.replicas }}
+  selector:
+    matchLabels:
+      component: webserver
+  template:
+    metadata:
+      labels:
+        component: webserver
+    spec:
+      containers:
+        - name: webserver
+          image: apache/airflow:{{ .Values.config.AIRFLOW__KUBERNETES__WORKER_CONTAINER_TAG }}
+          ports:
+            - containerPort: 8080
+          env:
+            - name: AIRFLOW__CORE__EXECUTOR
+              value: "{{ .Values.executor }}"
+            - name: AIRFLOW__CORE__SQL_ALCHEMY_CONN
+              value: "{{ .Values.config.AIRFLOW__CORE__SQL_ALCHEMY_CONN }}"
+          volumeMounts:
+            - name: airflow-pvc
+              mountPath: /usr/local/airflow
+      volumes:
+        - name: airflow-pvc
+          persistentVolumeClaim:
+            claimName: airflow-pvc
