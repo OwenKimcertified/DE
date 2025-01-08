@@ -1,0 +1,18 @@
+images:
+  airflow:
+    repository: apache/airflow
+    tag: 2.9.3
+
+webserver:
+  service:
+    type: LoadBalancer
+    port: 8080
+
+airflow:
+  config:
+    AIRFLOW__CORE__FERNET_KEY: 'your-fernet-key'
+    AIRFLOW__CORE__SQL_ALCHEMY_CONN: 'protocol//dns/airflow'
+
+persistence:
+  enabled: true
+  size: 10Gi
