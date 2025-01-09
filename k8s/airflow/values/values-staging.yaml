@@ -1,0 +1,13 @@
+executor: "KubernetesExecutor"
+
+webserver:
+  replicas: 2
+scheduler:
+  replicas: 2
+
+redis:
+  enabled: true
+  # 실제 Redis 용량/스펙 조절
+postgres:
+  enabled: true
+  # 여기서는 실제로는 AWS RDS를 쓰지 않고 임시 Postgres StatefulSet을 쓸 수도 있음

@@ -1,0 +1,18 @@
+{{- if .Values.postgres.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "my-airflow.name" . }}-postgres
+  labels:
+    {{- include "my-airflow.labels" . | nindent 4 }}
+    component: postgres
+spec:
+  type: {{ .Values.postgres.service.type | default "ClusterIP" }}
+  selector:
+    app.kubernetes.io/name: {{ include "my-airflow.name" . }}
+    component: postgres
+  ports:
+    - port: {{ .Values.postgres.service.port | default 5432 }}
+      targetPort: 5432
+      name: postgres
+{{- end }}

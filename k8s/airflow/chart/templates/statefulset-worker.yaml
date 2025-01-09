@@ -1,0 +1,39 @@
+# CeleryExecutor 설정
+{{- if .Values.worker.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "my-airflow.name" . }}-worker
+  labels:
+    {{- include "my-airflow.labels" . | nindent 4 }}
+    component: worker
+spec:
+  replicas: {{ .Values.worker.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "my-airflow.name" . }}
+      component: worker
+  serviceName: {{ include "my-airflow.name" . }}-worker
+  template:
+    metadata:
+      labels:
+        {{- include "my-airflow.labels" . | nindent 8 }}
+        component: worker
+    spec:
+      containers:
+        - name: worker
+          image: "{{ .Values.worker.image.repository }}:{{ .Values.worker.image.tag }}"
+          imagePullPolicy: {{ .Values.worker.image.pullPolicy }}
+          command: ["airflow", "celery", "worker"]
+          env:
+            - name: AIRFLOW__CORE__EXECUTOR
+              value: "CeleryExecutor"
+            # 기타 DB, Redis 연결 정보
+          resources:
+            limits:
+              cpu: {{ .Values.worker.resources.limits.cpu }}
+              memory: {{ .Values.worker.resources.limits.memory }}
+            requests:
+              cpu: {{ .Values.worker.resources.requests.cpu }}
+              memory: {{ .Values.worker.resources.requests.memory }}
+{{- end }}

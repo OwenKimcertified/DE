@@ -1,0 +1,42 @@
+# 예시: webserver Pod에 접속하여 config 내용을 확인
+kubectl exec -it <airflow-webserver-pod-name> -n airflow -- /bin/bash
+cat /opt/airflow/airflow.cfg
+
+# 배포 상태, 파드 확인
+kubectl get po -n airflow
+
+# 업데이트(기존 release가 있는 경우) 헬름차트
+helm upgrade airflow apache-airflow/airflow \
+  --namespace airflow \
+  --values my-values.yaml
+
+
+# 배포 커맨드
+
+Local 환경:
+
+helm install my-airflow-local ./chart \
+  -n airflow-local --create-namespace \
+  -f ./chart/values.yaml \
+  -f ./values/values-local.yaml
+
+Dev 환경:
+
+helm install my-airflow-dev ./chart \
+  -n airflow-dev --create-namespace \
+  -f ./chart/values.yaml \
+  -f ./values/values-dev.yaml
+
+Staging 환경:
+
+helm install my-airflow-staging ./chart \
+  -n airflow-staging --create-namespace \
+  -f ./chart/values.yaml \
+  -f ./values/values-staging.yaml
+
+Prod 환경:
+
+helm install my-airflow-prod ./chart \
+  -n airflow --create-namespace \
+  -f ./chart/values.yaml \
+  -f ./values/values-prod.yaml

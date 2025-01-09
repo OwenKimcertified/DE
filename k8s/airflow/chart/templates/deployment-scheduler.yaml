@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "my-airflow.name" . }}-scheduler
+  labels:
+    {{- include "my-airflow.labels" . | nindent 4 }}
+    component: scheduler
+spec:
+  replicas: {{ .Values.scheduler.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "my-airflow.name" . }}
+      component: scheduler
+  template:
+    metadata:
+      labels:
+        {{- include "my-airflow.labels" . | nindent 8 }}
+        component: scheduler
+    spec:
+      containers:
+        - name: scheduler
+          image: "{{ .Values.scheduler.image.repository }}:{{ .Values.scheduler.image.tag }}"
+          imagePullPolicy: {{ .Values.scheduler.image.pullPolicy }}
+          # 예: Scheduler 컨테이너는 주로 "airflow scheduler" 명령을 실행
+          command: ["airflow", "scheduler"]
+          env:
+            - name: AIRFLOW__CORE__EXECUTOR
+              value: {{ .Values.executor | quote }}
+            # DB 연결, Redis 연결, etc. 추가
+          resources:
+            limits:
+              cpu: {{ .Values.scheduler.resources.limits.cpu }}
+              memory: {{ .Values.scheduler.resources.limits.memory }}
+            requests:
+              cpu: {{ .Values.scheduler.resources.requests.cpu }}
+              memory: {{ .Values.scheduler.resources.requests.memory }}

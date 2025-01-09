@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "my-airflow.name" . }}-webserver
+  labels:
+    {{- include "my-airflow.labels" . | nindent 4 }}
+    component: webserver
+spec:
+  replicas: {{ .Values.webserver.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "my-airflow.name" . }}
+      component: webserver
+  template:
+    metadata:
+      labels:
+        {{- include "my-airflow.labels" . | nindent 8 }}
+        component: webserver
+    spec:
+      containers:
+        - name: webserver
+          image: "{{ .Values.webserver.image.repository }}:{{ .Values.webserver.image.tag }}"
+          imagePullPolicy: {{ .Values.webserver.image.pullPolicy }}
+          ports:
+            - containerPort: 8080
+          env:
+            - name: AIRFLOW__CORE__EXECUTOR
+              value: {{ .Values.executor | quote }}
+            # DB 연결, Redis 연결, 기타 설정은 Secret/ConfigMap에서 주입 가능
+          resources:
+            limits:
+              cpu: {{ .Values.webserver.resources.limits.cpu }}
+              memory: {{ .Values.webserver.resources.limits.memory }}
+            requests:
+              cpu: {{ .Values.webserver.resources.requests.cpu }}
+              memory: {{ .Values.webserver.resources.requests.memory }}

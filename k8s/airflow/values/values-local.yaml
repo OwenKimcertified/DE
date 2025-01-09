@@ -1,0 +1,31 @@
+executor: "LocalExecutor"
+
+webserver:
+  replicas: 1
+  resources:
+    requests:
+      cpu: "200m"
+      memory: "512Mi"
+    limits:
+      cpu: "500m"
+      memory: "1Gi"
+
+scheduler:
+  replicas: 1
+  resources:
+    requests:
+      cpu: "200m"
+      memory: "512Mi"
+    limits:
+      cpu: "500m"
+      memory: "1Gi"
+
+worker:
+  enabled: false
+
+redis:
+  enabled: false  # LocalExecutor에서는 Redis가 필요 없으면 끄기
+postgres:
+  enabled: true
+  image:
+    tag: "13"

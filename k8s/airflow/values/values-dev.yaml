@@ -1,0 +1,31 @@
+executor: "KubernetesExecutor"
+
+webserver:
+  replicas: 1
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "1"
+      memory: "2Gi"
+
+scheduler:
+  replicas: 1
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "1"
+      memory: "2Gi"
+
+# KubernetesExecutor + Redis가 필요 없으면 꺼도 되지만,
+# 만약 CeleryExecutor로 바꿀 수도 있으니 상황에 따라 enabled 조절
+redis:
+  enabled: true
+
+postgres:
+  enabled: true
+  image:
+    tag: "13"

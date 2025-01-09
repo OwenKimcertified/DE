@@ -1,0 +1,98 @@
+# chart/values.yaml
+
+# ---------------------------
+# Executor type
+executor: "KubernetesExecutor"
+
+# ---------------------------
+# Airflow webserver 설정
+webserver:
+  replicas: 1
+  image:
+    repository: apache/airflow
+    tag: 2.6.1
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "1"
+      memory: "2Gi"
+  service:
+    type: ClusterIP
+    port: 8080
+
+# ---------------------------
+# Airflow scheduler 설정
+scheduler:
+  replicas: 1
+  image:
+    repository: apache/airflow
+    tag: 2.6.1
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "1"
+      memory: "2Gi"
+
+# ---------------------------
+# Airflow worker 설정 (CeleryExecutor일 경우)
+# KubernetesExecutor 사용 시에는 동적으로 Pod이 생성되므로
+# worker StatefulSet이 꼭 필요하지 않을 수 있습니다.
+worker:
+  enabled: false        # 기본적으로 off
+  replicas: 2
+  image:
+    repository: apache/airflow
+    tag: 2.6.1
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "1"
+      memory: "2Gi"
+
+# ---------------------------
+# Redis 설정
+redis:
+  enabled: true
+  image:
+    repository: redis
+    tag: "6.2.6"
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: "200m"
+      memory: "512Mi"
+    limits:
+      cpu: "500m"
+      memory: "1Gi"
+  service:
+    type: ClusterIP
+    port: 6379
+
+# ---------------------------
+# PostgreSQL 설정
+postgres:
+  enabled: true
+  image:
+    repository: postgres
+    tag: "13"
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: "200m"
+      memory: "512Mi"
+    limits:
+      cpu: "500m"
+      memory: "1Gi"
+  service:
+    type: ClusterIP
+    port: 5432
+  # 연결 정보는 실제로는 Secrets로 관리하는 것이 안전함.

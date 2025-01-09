@@ -1,0 +1,27 @@
+executor: "KubernetesExecutor"
+
+webserver:
+  replicas: 2
+  resources:
+    requests:
+      cpu: "1"
+      memory: "2Gi"
+    limits:
+      cpu: "2"
+      memory: "4Gi"
+
+scheduler:
+  replicas: 2
+  resources:
+    requests:
+      cpu: "1"
+      memory: "2Gi"
+    limits:
+      cpu: "2"
+      memory: "4Gi"
+
+# 프로덕션에서는 보통 AWS RDS(외부 DB)와 ElastiCache(외부 Redis) 사용
+postgres:
+  enabled: false   # 내부 Postgres 사용 안 함
+redis:
+  enabled: false   # 내부 Redis 사용 안 함
