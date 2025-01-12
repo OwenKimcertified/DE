@@ -1,0 +1,8 @@
+[mysqld]
+log_bin = mysql-bin
+server_id = 1
+binlog_format = ROW  # CDC
+
+[pip]
+pip install mysql-connector-python
+pip install mysql-replication
